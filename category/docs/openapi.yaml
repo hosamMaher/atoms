@@ -1,0 +1,104 @@
+openapi: 3.0.0
+info:
+  title: Category Atom API
+  version: v1
+servers:
+  - url: /api
+paths:
+  /v1/categories:
+    get:
+      summary: List categories (pagination, search, filter)
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search by name
+        - in: query
+          name: is_active
+          schema:
+            type: integer
+            enum: [0,1]
+          description: Filter by active state
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+          description: Items per page
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                is_active:
+                  type: boolean
+                auto_approve:
+                  type: boolean
+      responses:
+        '200':
+          description: Created
+  /v1/categories/{id}:
+    put:
+      summary: Update category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Soft delete category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Deleted
+  /v1/categories/{id}/restore:
+    post:
+      summary: Restore soft-deleted category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Restored
+  /v1/categories/{id}/force:
+    delete:
+      summary: Force delete category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Permanently deleted
+components: {}
+
