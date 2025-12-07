@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Guest;
 use App\Services\Integration\WSO2Service;
+use Illuminate\Support\Facades\Hash;
 
 class GuestService {
 
@@ -74,6 +75,11 @@ class GuestService {
             $data['status'] = 'pending';
         }
 
+        // Hash password if provided
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
+
         $guest = Guest::create($data);
         return $this->enrichGuestWithRelations($guest);
     }
@@ -83,7 +89,12 @@ class GuestService {
         if (!$guest) {
             return null;
         }
+           // Hash password if provided
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
         $guest->update($data);
+     
         return $this->enrichGuestWithRelations($guest);
     }
 

@@ -20,6 +20,7 @@ class UpdateGuestRequest extends FormRequest
         return [
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:guests,email,' . $guestId,
+            'password' => 'nullable|string|min:6|confirmed',
             'mobile' => 'sometimes|string|max:255',
             'photo' => 'nullable|string',
             'category_id' => 'sometimes|integer',

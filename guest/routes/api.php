@@ -4,6 +4,11 @@ use Illuminate\Support\Facades\Route;
 
 // Guest Atom API v1
 Route::prefix('v1')->group(function() {
+    // AUTH ROUTES (Public)
+    Route::post('guest/auth/login', [App\Http\Controllers\Api\V1\Auth\LoginController::class, 'login']);
+    Route::post('guest/auth/validate', [App\Http\Controllers\Api\V1\Auth\ValidateController::class, 'validateToken']);
+
+    // Guest routes (can be protected with middleware later)
     Route::get('/guests', [App\Http\Controllers\Api\V1\GuestController::class, 'index']);
     Route::get('/guests/{id}', [App\Http\Controllers\Api\V1\GuestController::class, 'show']);
     Route::post('/guests', [App\Http\Controllers\Api\V1\GuestController::class, 'store']);

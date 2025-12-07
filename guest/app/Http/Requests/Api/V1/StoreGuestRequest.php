@@ -18,6 +18,7 @@ class StoreGuestRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:guests,email',
+            'password' => 'nullable|string|min:6',
             'mobile' => 'required|string|max:255',
             'photo' => 'nullable|string',
             'category_id' => 'required|integer',
