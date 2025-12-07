@@ -155,6 +155,20 @@ class GuestService {
     }
 
     /**
+     * Check if user can approve/reject this guest
+     */
+    public function canApproveGuest($guestId, $userId, $token = null) {
+        $guest = Guest::find($guestId);
+    
+        if (!$guest) {
+            return false;
+        }
+
+        $authService = new \App\Services\Auth\UserAuthService();
+        return $authService->hasCategoryPermission($userId, $guest->category_id, $guest->subcategory_id, $token);
+    }
+
+    /**
      * Get category details via WSO2
      */
     public function getCategoryDetails($categoryId) {

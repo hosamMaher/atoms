@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\GuestResource;
 use App\Http\Requests\Api\V1\StoreGuestRequest;
 use App\Http\Requests\Api\V1\UpdateGuestRequest;
 use App\Http\Requests\Api\V1\RejectGuestRequest;
+use App\Services\Auth\UserAuthService;
 use Illuminate\Http\Request;
 
 class GuestController extends Controller {
@@ -105,7 +106,24 @@ class GuestController extends Controller {
 
     /** POST /v1/guests/{id}/approve */
     public function approve(Request $request, $id) {
-        $userId = $request->header('X-User-ID', 1); // temporary fallback
+        // Validate JWT token from User Atom
+        $authService = new UserAuthService();
+        $token = $this->extractToken($request);
+        
+        if (!$token) {
+            return $this->error('Authorization token required', 401);
+        }
+
+        $userId = $authService->validateToken($token);
+        if (!$userId) {
+            return $this->error('Invalid or expired token', 401);
+        }
+
+        // Check permissions
+        if (!$this->service->canApproveGuest($id, $userId, $token)) {
+            return $this->error('You do not have permission to approve this guest', 403);
+        }
+
         $guest = $this->service->approveGuest($id, $userId);
         
         if (!$guest) {
@@ -117,7 +135,24 @@ class GuestController extends Controller {
 
     /** POST /v1/guests/{id}/reject */
     public function reject(RejectGuestRequest $request, $id) {
-        $userId = $request->header('X-User-ID', 1); // temporary fallback
+        // Validate JWT token from User Atom
+        $authService = new UserAuthService();
+        $token = $this->extractToken($request);
+        
+        if (!$token) {
+            return $this->error('Authorization token required', 401);
+        }
+
+        $userId = $authService->validateToken($token);
+        if (!$userId) {
+            return $this->error('Invalid or expired token', 401);
+        }
+
+        // Check permissions
+        if (!$this->service->canApproveGuest($id, $userId, $token)) {
+            return $this->error('You do not have permission to reject this guest', 403);
+        }
+
         $guest = $this->service->rejectGuest($id, $userId, $request->validated()['reason'] ?? null);
         
         if (!$guest) {
@@ -125,6 +160,17 @@ class GuestController extends Controller {
         }
 
         return $this->success(new GuestResource($guest), 'Guest rejected successfully');
+    }
+
+    /**
+     * Extract JWT token from request
+     */
+    private function extractToken(Request $request) {
+        $header = $request->header('Authorization');
+        if ($header && str_starts_with($header, 'Bearer ')) {
+            return substr($header, 7);
+        }
+        return null;
     }
 }
 

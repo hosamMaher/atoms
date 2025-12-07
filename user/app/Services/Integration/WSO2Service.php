@@ -21,22 +21,20 @@ class WSO2Service {
     }
 
     /** Generic request handler */
-    public function request($service, $method, $endpoint, $data = [], $headers = []) {
+    public function request($service, $method, $endpoint, $data = []) {
         $baseUrl = $this->resolveService($service);
 
         $url = $baseUrl . '/' . ltrim($endpoint, '/');
 
-        $http = Http::withHeaders($headers);
-
         switch (strtolower($method)) {
             case 'get':
-                return $http->get($url, $data)->json();
+                return Http::get($url, $data)->json();
             case 'post':
-                return $http->post($url, $data)->json();
+                return Http::post($url, $data)->json();
             case 'put':
-                return $http->put($url, $data)->json();
+                return Http::put($url, $data)->json();
             case 'delete':
-                return $http->delete($url)->json();
+                return Http::delete($url)->json();
             default:
                 throw new \Exception('Invalid HTTP method');
         }
