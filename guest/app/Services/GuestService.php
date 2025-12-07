@@ -57,6 +57,23 @@ class GuestService {
     }
 
     public function create($data) {
+        // Check if status is provided, if not, determine based on category auto_approve
+        if (!isset($data['status']) && isset($data['category_id'])) {
+            $category = $this->getCategoryDetails($data['category_id']);
+            
+            // If category has auto_approve enabled, set status to approved
+            // Support both boolean true and integer 1
+            if ($category && isset($category['auto_approve']) && 
+                ($category['auto_approve'] === true || $category['auto_approve'] === 1 || $category['auto_approve'] === '1')) {
+                $data['status'] = 'approved';
+            } else {
+                $data['status'] = 'pending';
+            }
+        } elseif (!isset($data['status'])) {
+            // Default to pending if no category_id provided
+            $data['status'] = 'pending';
+        }
+
         $guest = Guest::create($data);
         return $this->enrichGuestWithRelations($guest);
     }
@@ -139,10 +156,12 @@ class GuestService {
             $response = $wso2->request('category', 'get', 'categories/' . $categoryId);
             
             // Extract data from response if it's wrapped
-            if (isset($response['data'])) {
+            // Category API returns: {"success": true, "data": {...}}
+            if (isset($response['data']) && is_array($response['data'])) {
                 return $response['data'];
             }
             
+            // If response is already the data itself
             return $response;
         } catch (\Exception $e) {
             \Log::error('Failed to fetch category: ' . $e->getMessage());
