@@ -1,0 +1,135 @@
+openapi: 3.0.0
+info:
+  title: Guest Atom API
+  version: v1
+servers:
+  - url: /api
+paths:
+  /v1/guests:
+    get:
+      summary: List guests with pagination, search, and filters
+      parameters:
+        - in: query
+          name: q
+          schema: {type: string}
+          description: Search in name, email, mobile
+        - in: query
+          name: status
+          schema: {type: string}
+        - in: query
+          name: category_id
+          schema: {type: integer}
+        - in: query
+          name: subcategory_id
+          schema: {type: integer}
+        - in: query
+          name: per_page
+          schema: {type: integer}
+      responses:
+        '200': {description: OK}
+    post:
+      summary: Create guest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                email: {type: string}
+                mobile: {type: string}
+                photo: {type: string}
+                category_id: {type: integer}
+                subcategory_id: {type: integer}
+                status: {type: string}
+      responses:
+        '200': {description: Created}
+  /v1/guests/{id}:
+    get:
+      summary: Show single guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+      responses:
+        '200': {description: OK}
+    put:
+      summary: Update guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': {description: OK}
+    delete:
+      summary: Soft delete guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+      responses:
+        '200': {description: Deleted}
+  /v1/guests/{id}/restore:
+    post:
+      summary: Restore soft deleted guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+      responses:
+        '200': {description: Restored}
+  /v1/guests/{id}/force:
+    delete:
+      summary: Permanently delete guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+      responses:
+        '200': {description: Permanently deleted}
+  /v1/guests/{id}/approve:
+    post:
+      summary: Approve guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+        - in: header
+          name: X-User-ID
+          schema: {type: integer}
+      responses:
+        '200': {description: Approved}
+  /v1/guests/{id}/reject:
+    post:
+      summary: Reject guest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer}
+        - in: header
+          name: X-User-ID
+          schema: {type: integer}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: {type: string}
+      responses:
+        '200': {description: Rejected}
+components: {}
+
