@@ -11,9 +11,56 @@ class GuestService {
     /**
      * List guests with pagination, filtering and search.
      * Accepts $params: ['q' => string, 'status' => string, 'category_id' => int, 'subcategory_id' => int, 'per_page' => int]
+     * If user is admin: returns all guests
+     * If user is not admin: filters by user's category assignments
      */
-    public function list(array $params = []) {
+    public function list(array $params = [], $userId = null, $userData = null) {
         $query = Guest::query();
+  
+        // Filter by user permissions (userId and userData are required)
+        if ($userId && $userData) {
+            $roleSlug = $userData['role']['slug'] ?? null;
+         
+            // Admin can see all guests
+            if ($roleSlug !== 'admin') {
+                $assignments = $userData['category_assignments'] ?? [];
+                
+                if (!empty($assignments)) {
+                    // Get category and subcategory IDs from assignments based on role
+                    $categoryIds = [];
+                    $subcategoryIds = [];
+                    
+                    foreach ($assignments as $assignment) {
+                        // Category Coordinator: sees all guests in assigned categories
+                        if ($roleSlug === 'category_coordinator' && isset($assignment['category_id'])) {
+                            $categoryIds[] = $assignment['category_id'];
+                        }
+                        
+                        // Subcategory Coordinator: sees only guests in assigned subcategories
+                        if ($roleSlug === 'subcategory_coordinator' && isset($assignment['subcategory_id']) && $assignment['subcategory_id']) {
+                            $subcategoryIds[] = $assignment['subcategory_id'];
+                        }
+                    }
+                    
+                    // Filter guests based on role
+                    $query->where(function($q) use ($categoryIds, $subcategoryIds, $roleSlug) {
+                        if ($roleSlug === 'category_coordinator' && !empty($categoryIds)) {
+                            // Category Coordinator: guests in assigned categories
+                            $q->whereIn('category_id', $categoryIds);
+                        } elseif ($roleSlug === 'subcategory_coordinator' && !empty($subcategoryIds)) {
+                            // Subcategory Coordinator: guests in assigned subcategories
+                            $q->whereIn('subcategory_id', $subcategoryIds);
+                        } else {
+                            // No matching assignments, return empty
+                            $q->whereRaw('1 = 0');
+                        }
+                    });
+                } else {
+                    // User has no assignments, return empty result
+                    $query->whereRaw('1 = 0'); // Always false condition
+                }
+            }
+        }
 
         if (!empty($params['q'])) {
             $q = trim($params['q']);
@@ -89,10 +136,21 @@ class GuestService {
         if (!$guest) {
             return null;
         }
-           // Hash password if provided
+        
+        // Prevent direct modification of status and approval fields
+        // These should only be modified through approve/reject endpoints
+        unset($data['status']);
+        unset($data['approved_by']);
+        unset($data['approved_at']);
+        unset($data['rejected_by']);
+        unset($data['rejected_at']);
+        unset($data['reject_reason']);
+        
+        // Hash password if provided
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         }
+        
         $guest->update($data);
      
         return $this->enrichGuestWithRelations($guest);
@@ -139,11 +197,12 @@ class GuestService {
     }
 
     /** Reject guest */
-    public function rejectGuest($id, $userId, $reason = null) {
+    public function rejectGuest($id, $userId, $reason) {
         $guest = Guest::find($id);
         if (!$guest) {
             return null;
-        }
+        }   
+   
         $guest->status = 'rejected';
         $guest->rejected_by = $userId;
         $guest->rejected_at = now();

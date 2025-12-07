@@ -97,6 +97,17 @@ class UserService {
             return null;
         }
 
+        // Check if assignment already exists
+        $existing = $user->categoryAssignments()
+            ->where('category_id', $categoryId)
+            ->where('subcategory_id', $subcategoryId)
+            ->first();
+
+        if ($existing) {
+            // Return existing assignment instead of throwing error (idempotent)
+            return $existing;
+        }
+
         return $user->categoryAssignments()->create([
             'category_id' => $categoryId,
             'subcategory_id' => $subcategoryId

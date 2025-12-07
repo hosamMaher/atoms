@@ -25,7 +25,8 @@ class UpdateGuestRequest extends FormRequest
             'photo' => 'nullable|string',
             'category_id' => 'sometimes|integer',
             'subcategory_id' => 'nullable|integer',
-            'status' => 'nullable|string'
+            // Prevent direct status modification - use approve/reject endpoints instead
+            // 'status' => 'nullable|string'
         ];
     }
 

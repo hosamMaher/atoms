@@ -68,36 +68,66 @@ class UserAuthService {
      */
     public function hasCategoryPermission($userId, $categoryId, $subcategoryId = null, $token = null) {
         $user = $this->getUser($userId, $token);
-        
+     
         if (!$user) {
+            Log::warning("Permission check failed: User not found", ['user_id' => $userId]);
             return false;
         }
       
+        $roleSlug = $user['role']['slug'] ?? null;
+        
         // Admin can approve any category
-        if (isset($user['role']['slug']) && $user['role']['slug'] === 'admin') {
+        if ($roleSlug === 'admin') {
+            Log::info("Permission granted: Admin user", ['user_id' => $userId, 'category_id' => $categoryId]);
             return true;
         }
 
         // Check category assignments
-        $roleSlug = $user['role']['slug'] ?? null;
+        $assignments = $user['category_assignments'] ?? [];
         
-        if (isset($user['category_assignments']) && is_array($user['category_assignments'])) {
-            foreach ($user['category_assignments'] as $assignment) {
-                // Category Coordinator: can approve if assigned to the category
-                if ($roleSlug === 'category_coordinator') {
-                    if (isset($assignment['category_id']) && $assignment['category_id'] == $categoryId) {
-                        return true;
-                    }
+        if (empty($assignments)) {
+            Log::warning("Permission denied: No category assignments", [
+                'user_id' => $userId,
+                'role' => $roleSlug,
+                'category_id' => $categoryId,
+                'subcategory_id' => $subcategoryId
+            ]);
+            return false;
+        }
+           
+        foreach ($assignments as $assignment) {
+            // Category Coordinator: can approve if assigned to the category
+            if ($roleSlug === 'category_coordinator') {
+                if (isset($assignment['category_id']) && $assignment['category_id'] == $categoryId) {
+                    Log::info("Permission granted: Category Coordinator matched", [
+                        'user_id' => $userId,
+                        'category_id' => $categoryId,
+                        'assignment_category_id' => $assignment['category_id']
+                    ]);
+                    return true;
                 }
-                
-                // Sub-category Coordinator: can approve if assigned to the subcategory
-                if ($roleSlug === 'subcategory_coordinator') {
-                    if ($subcategoryId && isset($assignment['subcategory_id']) && $assignment['subcategory_id'] == $subcategoryId) {
-                        return true;
-                    }
+            }
+            
+            // Sub-category Coordinator: can approve if assigned to the subcategory
+            if ($roleSlug === 'subcategory_coordinator') {
+                if ($subcategoryId && isset($assignment['subcategory_id']) && $assignment['subcategory_id'] == $subcategoryId) {
+                    Log::info("Permission granted: Subcategory Coordinator matched", [
+                        'user_id' => $userId,
+                        'subcategory_id' => $subcategoryId,
+                        'assignment_subcategory_id' => $assignment['subcategory_id']
+                    ]);
+                    return true;
                 }
             }
         }
+
+        Log::warning("Permission denied: No matching assignment", [
+            'user_id' => $userId,
+            'role' => $roleSlug,
+            'category_id' => $categoryId,
+            'subcategory_id' => $subcategoryId,
+            'assignments' => $assignments
+        ]);
 
         return false;
     }

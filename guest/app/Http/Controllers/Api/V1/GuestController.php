@@ -24,10 +24,32 @@ class GuestController extends Controller {
     /**
      * GET /v1/guests
      * Query params: q, status, category_id, subcategory_id, per_page
+     * If user is admin: returns all guests
+     * If user is not admin: returns only guests in user's assigned categories
+     * Token is required
      */
     public function index(Request $request) {
         $params = $request->only(['q', 'status', 'category_id', 'subcategory_id', 'per_page']);
-        $result = $this->service->list($params);
+        
+        // Token is required
+        $authService = new UserAuthService();
+        $token = $this->extractToken($request);
+        
+        if (!$token) {
+            return $this->error('Authorization token required', 401);
+        }
+        
+        $userId = $authService->validateToken($token);
+        if (!$userId) {
+            return $this->error('Invalid or expired token', 401);
+        }
+        
+        $userData = $authService->getUser($userId, $token);
+        if (!$userData) {
+            return $this->error('Failed to get user information', 401);
+        }
+        
+        $result = $this->service->list($params, $userId, $userData);
 
         return $this->success([
             'data' => GuestResource::collection($result->items()),
@@ -121,6 +143,7 @@ class GuestController extends Controller {
 
         // Check permissions
         if (!$this->service->canApproveGuest($id, $userId, $token)) {
+            dd($id, $userId, $token);
             return $this->error('You do not have permission to approve this guest', 403);
         }
 
@@ -153,7 +176,7 @@ class GuestController extends Controller {
             return $this->error('You do not have permission to reject this guest', 403);
         }
 
-        $guest = $this->service->rejectGuest($id, $userId, $request->validated()['reason'] ?? null);
+        $guest = $this->service->rejectGuest($id, $userId, $request->validated()['reason']);
         
         if (!$guest) {
             return $this->error('Guest not found', 404);

@@ -16,7 +16,7 @@ class RejectGuestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => 'nullable|string'
+            'reason' => 'required|string|min:3|max:500'
         ];
     }
 

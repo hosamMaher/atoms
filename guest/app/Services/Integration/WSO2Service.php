@@ -22,23 +22,72 @@ class WSO2Service {
 
     /** Generic request handler */
     public function request($service, $method, $endpoint, $data = [], $headers = []) {
-        $baseUrl = $this->resolveService($service);
+        try {
+            $baseUrl = $this->resolveService($service);
 
-        $url = $baseUrl . '/' . ltrim($endpoint, '/');
+            $url = $baseUrl . '/' . ltrim($endpoint, '/');
 
-        $http = Http::withHeaders($headers);
+            $http = Http::withHeaders($headers)->timeout(10);
 
-        switch (strtolower($method)) {
-            case 'get':
-                return $http->get($url, $data)->json();
-            case 'post':
-                return $http->post($url, $data)->json();
-            case 'put':
-                return $http->put($url, $data)->json();
-            case 'delete':
-                return $http->delete($url)->json();
-            default:
-                throw new \Exception('Invalid HTTP method');
+            $response = null;
+            switch (strtolower($method)) {
+                case 'get':
+                    $response = $http->get($url, $data);
+                    break;
+                case 'post':
+                    $response = $http->post($url, $data);
+                    break;
+                case 'put':
+                    $response = $http->put($url, $data);
+                    break;
+                case 'delete':
+                    $response = $http->delete($url);
+                    break;
+                default:
+                    throw new \Exception('Invalid HTTP method');
+            }
+
+            // Check if request was successful
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            // Log error and return error response
+            \Log::error("WSO2 request failed: {$method} {$url}", [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Service unavailable',
+                'error' => $response->status() >= 500 ? 'Internal server error' : 'Request failed'
+            ];
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            // Service is down or unreachable
+            \Log::error("WSO2 service unreachable: {$service}", [
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Service temporarily unavailable',
+                'error' => 'Connection failed'
+            ];
+
+        } catch (\Exception $e) {
+            \Log::error("WSO2 request error: {$service}", [
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Request failed',
+                'error' => $e->getMessage()
+            ];
         }
     }
 
