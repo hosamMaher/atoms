@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Guest;
+use App\Services\Integration\WSO2Service;
 
 class GuestService {
 
@@ -36,11 +37,19 @@ class GuestService {
 
         $perPage = isset($params['per_page']) ? (int) $params['per_page'] : 15;
 
-        return $query->orderBy('id', 'desc')->paginate($perPage);
+        $result = $query->orderBy('id', 'desc')->paginate($perPage);
+        
+        // Enrich each guest with category and subcategory data
+        $result->getCollection()->transform(function ($guest) {
+            return $this->enrichGuestWithRelations($guest);
+        });
+
+        return $result;
     }
 
     public function find($id) {
-        return Guest::find($id);
+        $guest = Guest::find($id);
+        return $this->enrichGuestWithRelations($guest);
     }
 
     public function findWithTrashed($id) {
@@ -48,7 +57,8 @@ class GuestService {
     }
 
     public function create($data) {
-        return Guest::create($data);
+        $guest = Guest::create($data);
+        return $this->enrichGuestWithRelations($guest);
     }
 
     public function update($id, $data) {
@@ -57,7 +67,7 @@ class GuestService {
             return null;
         }
         $guest->update($data);
-        return $guest;
+        return $this->enrichGuestWithRelations($guest);
     }
 
     public function delete($id) {
@@ -97,7 +107,7 @@ class GuestService {
         $guest->rejected_at = null;
         $guest->reject_reason = null;
         $guest->save();
-        return $guest;
+        return $this->enrichGuestWithRelations($guest);
     }
 
     /** Reject guest */
@@ -113,6 +123,75 @@ class GuestService {
         $guest->approved_by = null;
         $guest->approved_at = null;
         $guest->save();
+        return $this->enrichGuestWithRelations($guest);
+    }
+
+    /**
+     * Get category details via WSO2
+     */
+    public function getCategoryDetails($categoryId) {
+        if (!$categoryId) {
+            return null;
+        }
+        
+        try {
+            $wso2 = new WSO2Service();
+            $response = $wso2->request('category', 'get', 'categories/' . $categoryId);
+            
+            // Extract data from response if it's wrapped
+            if (isset($response['data'])) {
+                return $response['data'];
+            }
+            
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch category: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get subcategory details via WSO2
+     */
+    public function getSubcategoryDetails($subcategoryId) {
+        if (!$subcategoryId) {
+            return null;
+        }
+        
+        try {
+            $wso2 = new WSO2Service();
+            $response = $wso2->request('category', 'get', 'subcategories/' . $subcategoryId);
+            
+            // Extract data from response if it's wrapped
+            if (isset($response['data'])) {
+                return $response['data'];
+            }
+            
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch subcategory: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Enrich guest with category and subcategory data
+     */
+    public function enrichGuestWithRelations($guest) {
+        if (!$guest) {
+            return $guest;
+        }
+
+        // Add category data
+        if ($guest->category_id) {
+            $guest->category_data = $this->getCategoryDetails($guest->category_id);
+        }
+
+        // Add subcategory data
+        if ($guest->subcategory_id) {
+            $guest->subcategory_data = $this->getSubcategoryDetails($guest->subcategory_id);
+        }
+
         return $guest;
     }
 }

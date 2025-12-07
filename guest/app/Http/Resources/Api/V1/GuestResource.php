@@ -21,7 +21,15 @@ class GuestResource extends JsonResource {
             'rejected_at' => optional($this->rejected_at)->toDateTimeString(),
             'reject_reason' => $this->reject_reason,
             'created_at' => optional($this->created_at)->toDateTimeString(),
-            'updated_at' => optional($this->updated_at)->toDateTimeString()
+            'updated_at' => optional($this->updated_at)->toDateTimeString(),
+            'category' => $this->when(
+                isset($this->category_data) && $this->category_data !== null,
+                $this->category_data
+            ),
+            'subcategory' => $this->when(
+                isset($this->subcategory_data) && $this->subcategory_data !== null,
+                $this->subcategory_data
+            ),
         ];
     }
 }
