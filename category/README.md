@@ -1,59 +1,256 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Category Atom API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+مشروع Laravel لإدارة الفئات (Categories) والتصنيفات الفرعية (Subcategories) كجزء من نظام Atoms الموزع.
 
-## About Laravel
+## نظرة عامة
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Category Atom هو خدمة مستقلة مسؤولة عن إدارة الفئات والتصنيفات الفرعية في النظام. يوفر API كامل لعمليات CRUD مع دعم البحث والتصفية والترقيم (Pagination) والحذف الناعم (Soft Deletes).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## المميزات
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- ✅ إدارة كاملة للفئات والتصنيفات الفرعية
+- ✅ عمليات CRUD كاملة (Create, Read, Update, Delete)
+- ✅ البحث والتصفية
+- ✅ الترقيم (Pagination)
+- ✅ الحذف الناعم (Soft Deletes) مع إمكانية الاستعادة
+- ✅ الحذف الدائم (Force Delete)
+- ✅ علاقة بين الفئات والتصنيفات الفرعية
+- ✅ API موثق بـ OpenAPI/Swagger
 
-## Learning Laravel
+## المتطلبات
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP >= 8.2
+- Composer
+- Laravel 12.0
+- SQLite (أو أي قاعدة بيانات مدعومة من Laravel)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## التثبيت
 
-## Laravel Sponsors
+```bash
+# تثبيت المكتبات
+composer install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# نسخ ملف البيئة
+cp .env.example .env
 
-### Premium Partners
+# توليد مفتاح التطبيق
+php artisan key:generate
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# تشغيل Migrations
+php artisan migrate
 
-## Contributing
+# تشغيل Seeders (إن وجدت)
+php artisan db:seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## الإعداد
 
-## Code of Conduct
+قم بتعديل ملف `.env` لإعداد قاعدة البيانات:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```env
+DB_CONNECTION=sqlite
+DB_DATABASE=/absolute/path/to/database/database.sqlite
+```
 
-## Security Vulnerabilities
+## API Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### الفئات (Categories)
 
-## License
+#### قائمة الفئات
+```
+GET /api/v1/categories
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Query Parameters:**
+- `q` (string): البحث في اسم الفئة
+- `is_active` (0|1): تصفية حسب الحالة
+- `per_page` (integer): عدد العناصر في الصفحة (افتراضي: 15)
+
+**مثال:**
+```
+GET /api/v1/categories?q=tech&is_active=1&per_page=20
+```
+
+#### عرض فئة واحدة
+```
+GET /api/v1/categories/{id}
+```
+
+#### إنشاء فئة جديدة
+```
+POST /api/v1/categories
+```
+
+**Body:**
+```json
+{
+  "name": "Technology",
+  "description": "Technology related categories",
+  "is_active": true,
+  "auto_approve": false
+}
+```
+
+#### تحديث فئة
+```
+PUT /api/v1/categories/{id}
+```
+
+#### حذف فئة (Soft Delete)
+```
+DELETE /api/v1/categories/{id}
+```
+
+#### استعادة فئة محذوفة
+```
+POST /api/v1/categories/{id}/restore
+```
+
+#### حذف دائم
+```
+DELETE /api/v1/categories/{id}/force
+```
+
+### التصنيفات الفرعية (Subcategories)
+
+#### قائمة التصنيفات الفرعية
+```
+GET /api/v1/subcategories
+```
+
+#### عرض التصنيفات الفرعية لفئة معينة
+```
+GET /api/v1/categories/{categoryId}/subcategories
+```
+
+#### عرض تصنيف فرعي واحد
+```
+GET /api/v1/subcategories/{id}
+```
+
+#### إنشاء تصنيف فرعي جديد
+```
+POST /api/v1/subcategories
+```
+
+**Body:**
+```json
+{
+  "name": "Web Development",
+  "description": "Web development subcategory",
+  "category_id": 1,
+  "is_active": true
+}
+```
+
+#### تحديث تصنيف فرعي
+```
+PUT /api/v1/subcategories/{id}
+```
+
+#### حذف تصنيف فرعي (Soft Delete)
+```
+DELETE /api/v1/subcategories/{id}
+```
+
+#### استعادة تصنيف فرعي محذوف
+```
+POST /api/v1/subcategories/{id}/restore
+```
+
+#### حذف دائم
+```
+DELETE /api/v1/subcategories/{id}/force
+```
+
+## هيكل المشروع
+
+```
+category/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   └── Api/V1/
+│   │   │       ├── CategoryController.php
+│   │   │       └── SubcategoryController.php
+│   │   ├── Requests/
+│   │   │   └── Api/V1/
+│   │   └── Resources/
+│   │       └── Api/V1/
+│   ├── Models/
+│   │   ├── Category.php
+│   │   └── Subcategory.php
+│   └── Services/
+│       ├── CategoryService.php
+│       └── SubcategoryService.php
+├── database/
+│   └── migrations/
+├── routes/
+│   └── api.php
+└── docs/
+    └── openapi.yaml
+```
+
+## النماذج (Models)
+
+### Category
+- `id`: معرف الفئة
+- `name`: اسم الفئة
+- `description`: وصف الفئة
+- `is_active`: حالة التفعيل
+- `auto_approve`: الموافقة التلقائية
+- `created_at`, `updated_at`, `deleted_at`: التواريخ
+
+### Subcategory
+- `id`: معرف التصنيف الفرعي
+- `name`: اسم التصنيف الفرعي
+- `description`: وصف التصنيف الفرعي
+- `category_id`: معرف الفئة الأب
+- `is_active`: حالة التفعيل
+- `created_at`, `updated_at`, `deleted_at`: التواريخ
+
+## الخدمات (Services)
+
+### CategoryService
+- `list(array $params)`: قائمة الفئات مع البحث والتصفية
+- `create($data)`: إنشاء فئة جديدة
+- `find($id)`: البحث عن فئة
+- `update($id, $data)`: تحديث فئة
+- `delete($id)`: حذف ناعم
+- `restore($id)`: استعادة فئة محذوفة
+- `forceDelete($id)`: حذف دائم
+
+### SubcategoryService
+- نفس العمليات للتصنيفات الفرعية
+
+## التشغيل
+
+```bash
+# تشغيل الخادم
+php artisan serve
+
+# أو استخدام Composer script
+composer run dev
+```
+
+الخادم سيعمل على: `http://localhost:8000`
+
+## الاختبارات
+
+```bash
+php artisan test
+```
+
+## التوثيق
+
+التوثيق الكامل متوفر في ملف `docs/openapi.yaml` ويمكن استيراده في أدوات مثل Postman أو Swagger UI.
+
+## التكامل مع الأنظمة الأخرى
+
+هذا المشروع جزء من نظام Atoms الموزع ويمكن التكامل مع:
+- **Guest Atom**: لإدارة الضيوف المرتبطين بالفئات
+- **User Atom**: لإدارة المستخدمين المرتبطين بالفئات
+
+## الترخيص
+
+MIT License
